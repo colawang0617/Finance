@@ -4,6 +4,9 @@ Finance/**/*.xlsx
 Finance/.~*.xlsx
 **/.~*.xlsx
 
+# Chinese README (contains project-specific information)
+README Chinese.md
+
 # Generated Reports with Real Data
 reports/graphs/*.png
 

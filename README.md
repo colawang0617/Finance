@@ -86,7 +86,7 @@ python main.py
 Sales reports must follow this format:
 
 ```
-10月28日销售日报
+10月29日销售日报
 1. 场地入账金额: 300
 大众美团 50
 储值卡核销 50
@@ -101,7 +101,7 @@ Sales reports must follow this format:
 4. 储值卡充值: 50 
 5. 私教课充值: 50
 6. 月卡: 50
-当日总计: 550
+当日总计: 600
 ```
 
 **Notes:**

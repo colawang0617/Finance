@@ -6,7 +6,48 @@ Easy-to-use script for generating financial visualization reports
 """
 
 import sys
+import os
+import openpyxl
 from visualizations import monthly_category, daily_progression, monthly_pies, statistical_analysis
+
+
+def get_available_months(filepath=None):
+    """
+    Automatically detect which months have data in the Excel file
+
+    Args:
+        filepath: Path to Excel file (defaults to standard location)
+
+    Returns:
+        List of month numbers that have data (e.g., [5, 6, 7, 8, 9, 10, 11])
+    """
+    if filepath is None:
+        # Default path
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        filepath = os.path.join(base_dir, 'Finance', '财务跟踪表_完整版_KL.xlsx')
+
+    try:
+        wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
+        ws = wb['每日数据']
+
+        # Collect unique months from date column
+        months = set()
+        for row in range(3, ws.max_row + 1):
+            date_val = ws[f'A{row}'].value
+            if date_val and isinstance(date_val, str) and '-' in date_val:
+                # Parse "MM-DD" format
+                month = int(date_val.split('-')[0])
+                months.add(month)
+
+        wb.close()
+
+        # Return sorted list
+        return sorted(list(months))
+
+    except Exception as e:
+        print(f"Warning: Could not auto-detect months ({e}), using default range")
+        # Fallback to extended default range
+        return [5, 6, 7, 8, 9, 10, 11, 12]
 
 
 def print_header():
@@ -35,30 +76,34 @@ def generate_all_charts():
     print("\n正在生成所有图表...")
     print("-" * 60)
 
+    # Auto-detect available months
+    available_months = get_available_months()
+    print(f"检测到的月份: {', '.join(map(str, available_months))}")
+
     try:
         # Chart 1: Monthly Category Progression
         print("\n[1/4] 正在生成月度分类进展图...")
         file1 = monthly_category.generate_monthly_category_chart(
-            start_month=5,
-            end_month=10
+            start_month=min(available_months),
+            end_month=max(available_months)
         )
 
         # Chart 2: Daily Venue Progression
         print("\n[2/4] 正在生成每日场地进展图...")
         file2 = daily_progression.generate_daily_progression(
-            months=[5, 6, 7, 8, 9, 10]
+            months=available_months
         )
 
         # Chart 3: Monthly Percentage Distribution
         print("\n[3/4] 正在生成月度百分比分布图...")
         file3 = monthly_pies.generate_monthly_pies(
-            months=[5, 6, 7, 8, 9, 10]
+            months=available_months
         )
 
         # Chart 4: Statistical Analysis
         print("\n[4/4] 正在生成统计分析图...")
         file4 = statistical_analysis.generate_statistical_analysis(
-            months=[5, 6, 7, 8, 9, 10]
+            months=available_months
         )
 
         print("\n" + "=" * 60)
@@ -83,6 +128,12 @@ def main():
     """Main function"""
     print_header()
 
+    # Auto-detect available months
+    available_months = get_available_months()
+    default_start = min(available_months)
+    default_end = max(available_months)
+    default_months_str = ','.join(map(str, available_months))
+
     while True:
         print_menu()
         choice = input("\n请选择 (0-4): ").strip()
@@ -90,8 +141,8 @@ def main():
         try:
             if choice == '1':
                 print("\n正在生成月度分类进展图...")
-                start = input("起始月份 (默认5): ").strip() or "5"
-                end = input("结束月份 (默认10): ").strip() or "10"
+                start = input(f"起始月份 (默认{default_start}): ").strip() or str(default_start)
+                end = input(f"结束月份 (默认{default_end}): ").strip() or str(default_end)
 
                 file_path = monthly_category.generate_monthly_category_chart(
                     start_month=int(start),
@@ -101,36 +152,36 @@ def main():
 
             elif choice == '2':
                 print("\n正在生成每日场地进展图...")
-                months_input = input("月份列表 (用逗号分隔, 默认5-10): ").strip()
+                months_input = input(f"月份列表 (用逗号分隔, 默认{default_months_str}): ").strip()
 
                 if months_input:
                     months = [int(m.strip()) for m in months_input.split(',')]
                 else:
-                    months = [5, 6, 7, 8, 9, 10]
+                    months = available_months
 
                 file_path = daily_progression.generate_daily_progression(months=months)
                 print(f"\n✓ 图表已生成: {file_path}")
 
             elif choice == '3':
                 print("\n正在生成月度百分比分布图...")
-                months_input = input("月份列表 (用逗号分隔, 默认5-10): ").strip()
+                months_input = input(f"月份列表 (用逗号分隔, 默认{default_months_str}): ").strip()
 
                 if months_input:
                     months = [int(m.strip()) for m in months_input.split(',')]
                 else:
-                    months = [5, 6, 7, 8, 9, 10]
+                    months = available_months
 
                 file_path = monthly_pies.generate_monthly_pies(months=months)
                 print(f"\n✓ 图表已生成: {file_path}")
 
             elif choice == '4':
                 print("\n正在生成统计分析图...")
-                months_input = input("月份列表 (用逗号分隔, 默认5-10): ").strip()
+                months_input = input(f"月份列表 (用逗号分隔, 默认{default_months_str}): ").strip()
 
                 if months_input:
                     months = [int(m.strip()) for m in months_input.split(',')]
                 else:
-                    months = [5, 6, 7, 8, 9, 10]
+                    months = available_months
 
                 file_path = statistical_analysis.generate_statistical_analysis(months=months)
                 print(f"\n✓ 图表已生成: {file_path}")
@@ -171,15 +222,16 @@ def command_line_mode():
     parser.add_argument('--daily', action='store_true', help='生成每日进展图')
     parser.add_argument('--pies', action='store_true', help='生成月度百分比分布图')
     parser.add_argument('--stats', action='store_true', help='生成统计分析图')
-    parser.add_argument('--months', type=str, help='月份 (逗号分隔, 如: 5,6,7,8,9,10)')
+    parser.add_argument('--months', type=str, help='月份 (逗号分隔, 如: 5,6,7,8,9,10,11)')
 
     args = parser.parse_args()
 
-    # Parse months
+    # Parse months - auto-detect if not specified
     if args.months:
         months = [int(m.strip()) for m in args.months.split(',')]
     else:
-        months = [5, 6, 7, 8, 9, 10]
+        months = get_available_months()
+        print(f"自动检测到的月份: {', '.join(map(str, months))}")
 
     # Generate charts
     if args.all:

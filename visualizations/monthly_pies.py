@@ -87,18 +87,30 @@ def get_monthly_venue_breakdown(filepath, months):
     return monthly_data
 
 
-def generate_monthly_pies(months=[5, 6, 7, 8, 9, 10], filepath='Finance/财务跟踪表_完整版_KL.xlsx', output_dir='reports/graphs'):
+def generate_monthly_pies(months=None, filepath='Finance/财务跟踪表_完整版_KL.xlsx', output_dir='reports/graphs'):
     """
     Generate grid of monthly pie charts showing venue income distribution
 
     Args:
-        months: List of months to display
+        months: List of months to display (auto-detects if None)
         filepath: Path to Excel file
         output_dir: Directory to save output PNG
 
     Returns:
         Path to generated PNG file
     """
+    # Auto-detect months if not provided
+    if months is None:
+        wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
+        ws = wb['每日数据']
+        months_set = set()
+        for row in range(3, ws.max_row + 1):
+            date_val = ws[f'A{row}'].value
+            if date_val and isinstance(date_val, str) and '-' in date_val:
+                months_set.add(int(date_val.split('-')[0]))
+        wb.close()
+        months = sorted(list(months_set))
+
     # Get data
     data = get_monthly_venue_breakdown(filepath, months)
 
@@ -115,14 +127,24 @@ def generate_monthly_pies(months=[5, 6, 7, 8, 9, 10], filepath='Finance/财务�
     colors = ['#5DADE2', '#C39BD3', '#F4A460', '#CD6155', '#82B366', '#64B5F6']
 
     month_names = {
-        5: '5月', 6: '6月', 7: '7月',
-        8: '8月', 9: '9月', 10: '10月'
+        1: '1月', 2: '2月', 3: '3月', 4: '4月',
+        5: '5月', 6: '6月', 7: '7月', 8: '8月',
+        9: '9月', 10: '10月', 11: '11月', 12: '12月'
     }
 
-    # Create figure with subplots (2 rows x 3 columns)
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    # Calculate grid size dynamically based on number of months
+    num_months = len(data)
+    cols = 3  # Always use 3 columns
+    rows = (num_months + cols - 1) // cols  # Ceiling division
+
+    # Create figure with dynamic grid
+    fig, axes = plt.subplots(rows, cols, figsize=(18, 6 * rows))
     fig.suptitle('场地入账 - 月度百分比分布 (2025)',
                  fontsize=22, fontweight='bold', y=0.995)
+
+    # Flatten axes array for easier indexing
+    if rows == 1:
+        axes = axes.reshape(1, -1)  # Make it 2D even for single row
 
     # Plot each month
     for idx, month in enumerate(sorted(data.keys())):
@@ -174,10 +196,11 @@ def generate_monthly_pies(months=[5, 6, 7, 8, 9, 10], filepath='Finance/财务�
         ax.set_title(f'{month_names.get(month, f"{month}月")} 2025\n总计: ¥{total:,.0f}',
                     fontsize=14, fontweight='bold', pad=15)
 
-    # Remove empty subplots if we have less than 6 months
-    for idx in range(len(data), 6):
-        row = idx // 3
-        col = idx % 3
+    # Remove empty subplots if we don't fill the entire grid
+    total_subplots = rows * cols
+    for idx in range(num_months, total_subplots):
+        row = idx // cols
+        col = idx % cols
         fig.delaxes(axes[row, col])
 
     # Add legend at the bottom

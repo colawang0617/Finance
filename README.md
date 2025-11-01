@@ -260,21 +260,29 @@ For issues, please:
 
 ### Generate Financial Report Charts
 
+The report generator now **automatically detects** which months have data in your Excel file!
+
 ```bash
-# Generate all charts
+# Generate all charts (auto-detects available months)
 python3 generate_report.py --all
 
-# Interactive menu
+# Interactive menu (shows detected month range)
 python3 generate_report.py
 
-# Generate specific charts
+# Generate specific charts (auto-detects months)
 python3 generate_report.py --monthly  # Monthly category progress chart
 python3 generate_report.py --daily    # Daily progression chart
 python3 generate_report.py --pies     # Monthly percentage distribution charts
+python3 generate_report.py --stats    # Statistical analysis ⭐
 
-# Specify month range
-python3 generate_report.py --all --months 8,9,10
+# Manually specify month range (optional)
+python3 generate_report.py --all --months 8,9,10,11
 ```
+
+**Smart Month Detection:**
+- Automatically includes all months with data (May-November currently)
+- Will automatically include December when December data is added
+- No need to update code when adding new months!
 
 **Detailed usage**: See `docs/VISUALIZATION_GUIDE.md`
 
